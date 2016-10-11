@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 
-import subprocess
+from manager import WindowManager
 
 
 DEBUG_STR = '{:>12}: {}'
 
 
-class Item(object):
+class AbstractItem(object):
     def __get_item_size(self, raw_value, base_size):
         if isinstance(raw_value, int):
             item_count = self.layout().item_count()
@@ -33,7 +33,6 @@ class Item(object):
 
     def debug(self):
         print('\n'.join([
-            # DEBUG_STR.format('Имя', self.__name),
             DEBUG_STR.format('Размер', self.size()),
             DEBUG_STR.format('Ширина', self.width()),
             DEBUG_STR.format('Высота', self.height()),
@@ -57,6 +56,9 @@ class Item(object):
 
     def layout(self):
         return self.__layout
+
+    def move(self):
+        raise NotImplementedError('Item.execute() is abstract and must be overridden.')
 
     def next(self):
         return self.__next
@@ -162,24 +164,46 @@ class Item(object):
         return self.__width
 
 
-# class Item(AbstractItem):
-#     def __init__(self, cmd=None, *args, **kwargs):
-#         super().__init__(*args, **kwargs)
-#         self.__cmd = cmd
-#         self.wnd_name = None
-#
-#     def cmd(self):
-#         return 'python ./wnd.py -W {} -H {} -X {} -Y {}'.format(self.width(), self.height(), self.x, self.y)
-#
-#     def debug(self):
-#         super().debug()
-#         print('\n'.join([
-#             DEBUG_STR.format('Команда', self.cmd()),
-#             DEBUG_STR.format('Окно', self.wnd_name)
-#         ]), '\n')
+class Item(AbstractItem):
+    def __init__(self, wnd=None, select_by_click=False, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.__hwnd = None
+
+        if wnd or select_by_click:
+            self.set_window(wnd, select_by_click)
+
+    def debug(self):
+        print(DEBUG_STR.format('HWND', self.__hwnd))
+        super().debug()
+
+    def move(self):
+        if self.__hwnd is None:
+            raise RuntimeError('The window is not set')
+
+        WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
+
+    def Popen(self, *args, **kwargs):
+        hwnd, proc = WindowManager.Popen(*args, **kwargs)
+        self.set_window(hwnd)
+
+    def set_window(self, wnd, select_by_click=False):
+        if isinstance(wnd, int):
+            self.__hwnd = wnd if WindowManager.is_exists(wnd) else WindowManager.find_by_pid(wnd)
+            return
+
+        if isinstance(wnd, str):
+            self.__hwnd = WindowManager.find_by_title(wnd)
+            return
+
+        if select_by_click:
+            self.__hwnd = WindowManager.find_by_mouse_click()
+            return
+
+        raise ValueError('Invalid argument value "cmd".')
 
 
-class Layout(Item):
+class Layout(AbstractItem):
     HORIZONTAL = 'horizontal'
     VERTICAL = 'vertical'
 
@@ -258,24 +282,3 @@ class Layout(Item):
             founded = founded.next()
 
         return founded
-
-
-
-    def run(self):
-        from manager import WindowManager
-
-        item = self.first()
-
-        while item:
-            # item.debug()
-
-            if isinstance(item, Layout):
-                item.run()
-            else:
-                # subprocess.Popen(item.cmd(), stdout=subprocess.PIPE, shell=True)
-                # hwnd, proc = WindowManager.Popen(['python', './wnd.py'])
-
-                hwnd, proc = WindowManager.Popen(['notepad'])
-                WindowManager.move(hwnd, item.x(), item.y(), item.width(), item.height())
-
-            item = item.next()
