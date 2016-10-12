@@ -8,19 +8,18 @@ DEBUG_STR = '{:>12}: {}'
 
 
 class AbstractItem(object):
-    def __get_item_size(self, raw_value, base_size):
-        if isinstance(raw_value, int):
+    def __get_item_size(self, base_size):
+        value, unit = self.size()
+
+        if unit is None:
             item_count = self.layout().item_count()
-            return int(raw_value * base_size / item_count)
+            return int(value * base_size / item_count)
 
-        if isinstance(raw_value, str):
-            if raw_value.endswith('%'):
-                return int(raw_value.rstrip('%')) * base_size / 100
+        if unit == '%':
+            return value * base_size / 100
 
-            if raw_value.endswith('px'):
-                return int(raw_value.rstrip('px'))
-
-        raise ValueError('Unknown unit "{}".'.format(raw_value))
+        if unit == 'px':
+            return value
 
     def __init__(self, size=1):
         self.__layout = None
@@ -51,7 +50,7 @@ class AbstractItem(object):
         if layout.direction() == Layout.HORIZONTAL:
             self.__height = layout.height()
         else:
-            self.__height = self.__get_item_size(self.size(), layout.height())
+            self.__height = self.__get_item_size(layout.height())
 
         return self.__height
 
@@ -119,7 +118,32 @@ class AbstractItem(object):
         self.__width = int(width)
 
     def size(self):
-        return self.__size or 1
+        size = self.__size or 1
+
+        if isinstance(size, int):
+            return size, None
+
+        if isinstance(size, str):
+            for i, c in enumerate(size):
+                if not c.isdigit():
+                    break
+
+            return int(size[:i]), size[i:]
+
+        raise ValueError('Unknown unit "{}".'.format(size))
+
+    def width(self, force=False):
+        if not force and self.__width:
+            return self.__width
+
+        layout = self.layout()
+
+        if layout.direction() == Layout.VERTICAL:
+            self.__width = layout.width()
+        else:
+            self.__width = self.__get_item_size(layout.width())
+
+        return self.__width
 
     def x(self, force=False):
         if not force and self.__x is not None:
@@ -150,19 +174,6 @@ class AbstractItem(object):
         self.__y = prev.y() + prev.height()
 
         return self.__y
-
-    def width(self, force=False):
-        if not force and self.__width:
-            return self.__width
-
-        layout = self.layout()
-
-        if layout.direction() == Layout.VERTICAL:
-            self.__width = layout.width()
-        else:
-            self.__width = self.__get_item_size(self.size(), layout.width())
-
-        return self.__width
 
 
 class Item(AbstractItem):
@@ -266,7 +277,9 @@ class Layout(AbstractItem):
 
         item.reset()
         item.set_layout(self)
-        self.__item_count += item.size()
+
+        value, unit = item.size()
+        self.__item_count += (value if unit is None else 0)
 
         if self.__head is None:
             self.__head = item
