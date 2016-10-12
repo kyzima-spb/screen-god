@@ -212,9 +212,13 @@ class Layout(AbstractItem):
 
     def __init__(self, direction, width=None, height=None, x=None, y=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         self.__direction = direction
+        self.__head = None
+        self.__tail = None
+
         self.__item_count = 0
-        self.__first = None
+        self.__size_unit = None
 
         if x is not None:
             self.set_x(x)
@@ -231,30 +235,50 @@ class Layout(AbstractItem):
     def __iter__(self):
         return LayoutIterator(self)
 
-    def __insert(self, item, target):
-        if not isinstance(item, AbstractItem):
-            raise TypeError('Passed argument is not a Item.')
+    def __do_insert_after(self, item, target):
+        is_head = target.prev() is None
 
-        item.reset()
+        if is_head:
+            self.__head = item
+        else:
+            target.prev().set_next(item)
+            item.set_prev(target.prev())
 
-        if target.next():
+        item.set_next(target)
+        target.set_prev(item)
+
+    def __do_insert_before(self, item, target):
+        is_tail = target.next() is None
+
+        if is_tail:
+            self.__tail = item
+        else:
             target.next().set_prev(item)
             item.set_next(target.next())
 
         item.set_prev(target)
         target.set_next(item)
 
+    def __insert(self, item, target=None, after=False):
+        if not isinstance(item, AbstractItem):
+            raise TypeError('Incompatible type of the argument "item".')
+
+        item.reset()
         item.set_layout(self)
         self.__item_count += item.size()
 
+        if self.__head is None:
+            self.__head = item
+            self.__tail = item
+            return
+
+        if not isinstance(target, AbstractItem):
+            raise TypeError('Incompatible type of the argument "target".')
+
+        self.__do_insert_after(item, target) if after else self.__do_insert_before(item, target)
+
     def append(self, item):
-        if self.last():
-            self.__insert(item, self.last())
-        else:
-            item.reset()
-            self.__first = item
-            item.set_layout(self)
-            self.__item_count += item.size()
+        return self.__insert(item, self.last(), after=False)
 
     def debug(self):
         print('\n'.join([
@@ -270,27 +294,23 @@ class Layout(AbstractItem):
         return self.__direction
 
     def first(self):
-        return self.__first
+        return self.__head
 
     def insert_after(self, item, target):
-        self.__insert(item, target.prev())
+        self.__insert(item, target, after=True)
 
     def insert_before(self, item, target):
-        self.__insert(item, target)
+        self.__insert(item, target, after=False)
 
     def item_count(self):
         return self.__item_count
 
     def last(self):
-        if self.first() is None:
-            return None
+        return self.__tail
 
-        founded = self.first()
-
-        while founded.next():
-            founded = founded.next()
-
-        return founded
+    def validate(self):
+        for item in self:
+            pass
 
 
 class LayoutIterator(object):
