@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from screen_god.manager import WindowManager
+from screen_god.messages import _
 
 
 DEBUG_STR = '{:>12}: {}'
@@ -58,7 +59,7 @@ class AbstractItem(object):
         return self.__layout
 
     def move(self):
-        raise NotImplementedError('Item.execute() is abstract and must be overridden.')
+        raise NotImplementedError(_('abstract_method', method='Item.execute()'))
 
     def next(self):
         return self.__next
@@ -83,31 +84,31 @@ class AbstractItem(object):
 
     def set_layout(self, layout):
         if not isinstance(layout, Layout):
-            raise TypeError('Passed argument is not a Layer.')
+            raise TypeError(_('incompatible_type_argument', name='layout', type='Layout'))
 
         self.__layout = layout
 
     def set_next(self, item):
         if not isinstance(item, AbstractItem):
-            raise TypeError('Passed argument is not a Item.')
+            raise TypeError(_('incompatible_type_argument', name='item', type='AbstractItem'))
 
         self.__next = item
 
     def set_prev(self, item):
         if not isinstance(item, AbstractItem):
-            raise TypeError('Passed argument is not a Item.')
+            raise TypeError(_('incompatible_type_argument', name='item', type='AbstractItem'))
 
         self.__prev = item
 
     def set_x(self, x):
         if self.layout() is not None:
-            raise RuntimeError('The property will be calculated automatically.')
+            raise RuntimeError(_('property_calculated_automatically'))
 
         self.__x = int(x)
 
     def set_y(self, y):
         if self.layout() is not None:
-            raise RuntimeError('The property will be calculated automatically.')
+            raise RuntimeError(_('property_calculated_automatically'))
 
         self.__y = int(y)
 
@@ -182,7 +183,7 @@ class Item(AbstractItem):
 
     def move(self):
         if self.__hwnd is None:
-            raise RuntimeError('The window is not set')
+            raise RuntimeError(_('window_not_set'))
 
         WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
 
@@ -203,7 +204,7 @@ class Item(AbstractItem):
             self.__hwnd = WindowManager.find_by_mouse_click()
             return
 
-        raise ValueError('Invalid argument value "cmd".')
+        raise ValueError(_('invalid_argument_value', name='cmd'))
 
 
 class Layout(AbstractItem):
@@ -261,7 +262,7 @@ class Layout(AbstractItem):
 
     def __insert(self, item, target=None, after=False):
         if not isinstance(item, AbstractItem):
-            raise TypeError('Incompatible type of the argument "item".')
+            raise TypeError(_('incompatible_type_argument', name='item', type='AbstractItem'))
 
         item.reset()
         item.set_layout(self)
@@ -273,7 +274,7 @@ class Layout(AbstractItem):
             return
 
         if not isinstance(target, AbstractItem):
-            raise TypeError('Incompatible type of the argument "target".')
+            raise TypeError(_('incompatible_type_argument', name='target', type='AbstractItem'))
 
         self.__do_insert_after(item, target) if after else self.__do_insert_before(item, target)
 
@@ -316,7 +317,7 @@ class Layout(AbstractItem):
 class LayoutIterator(object):
     def __init__(self, layout):
         if not isinstance(layout, Layout):
-            raise TypeError('Passed argument is not a Layer.')
+            raise TypeError(_('incompatible_type_argument', name='layout', type='Layout'))
 
         self.__start = layout.first()
 
