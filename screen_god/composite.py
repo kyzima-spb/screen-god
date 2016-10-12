@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from manager import WindowManager
+from screen_god.manager import WindowManager
 
 
 DEBUG_STR = '{:>12}: {}'
@@ -88,13 +88,13 @@ class AbstractItem(object):
         self.__layout = layout
 
     def set_next(self, item):
-        if not isinstance(item, Item):
+        if not isinstance(item, AbstractItem):
             raise TypeError('Passed argument is not a Item.')
 
         self.__next = item
 
     def set_prev(self, item):
-        if not isinstance(item, Item):
+        if not isinstance(item, AbstractItem):
             raise TypeError('Passed argument is not a Item.')
 
         self.__prev = item
@@ -226,7 +226,7 @@ class Layout(AbstractItem):
             self.set_height(height)
 
     def __insert(self, item, target):
-        if not isinstance(item, Item):
+        if not isinstance(item, AbstractItem):
             raise TypeError('Passed argument is not a Item.')
 
         item.reset()
