@@ -174,7 +174,10 @@ class Item(AbstractItem):
             self.set_window(wnd, select_by_click)
 
     def debug(self):
-        print(DEBUG_STR.format('HWND', self.__hwnd))
+        print('\n'.join([
+            DEBUG_STR.format('Тип', 'Элемент'),
+            DEBUG_STR.format('HWND', self.__hwnd)
+        ]))
         super().debug()
 
     def move(self):
@@ -225,6 +228,9 @@ class Layout(AbstractItem):
         if height:
             self.set_height(height)
 
+    def __iter__(self):
+        return LayoutIterator(self)
+
     def __insert(self, item, target):
         if not isinstance(item, AbstractItem):
             raise TypeError('Passed argument is not a Item.')
@@ -250,6 +256,16 @@ class Layout(AbstractItem):
             item.set_layout(self)
             self.__item_count += item.size()
 
+    def debug(self):
+        print('\n'.join([
+            DEBUG_STR.format('Тип', 'Слой')
+        ]))
+
+        super().debug()
+
+        for item in self:
+            item.debug()
+
     def direction(self):
         return self.__direction
 
@@ -259,18 +275,11 @@ class Layout(AbstractItem):
     def insert_after(self, item, target):
         self.__insert(item, target.prev())
 
-    def item_count(self):
-        return self.__item_count
-
-    # def debug(self):
-    #     super().debug()
-    #
-    #     for item in self.__items:
-    #         print('\n')
-    #         item.debug()
-
     def insert_before(self, item, target):
         self.__insert(item, target)
+
+    def item_count(self):
+        return self.__item_count
 
     def last(self):
         if self.first() is None:
@@ -282,3 +291,23 @@ class Layout(AbstractItem):
             founded = founded.next()
 
         return founded
+
+
+class LayoutIterator(object):
+    def __init__(self, layout):
+        if not isinstance(layout, Layout):
+            raise TypeError('Passed argument is not a Layer.')
+
+        self.__start = layout.first()
+
+    def __next__(self):
+        return self.next()
+
+    def next(self):
+        if self.__start is None:
+            raise StopIteration
+
+        item = self.__start
+        self.__start = item.next()
+
+        return item
