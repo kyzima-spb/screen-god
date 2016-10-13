@@ -33,6 +33,9 @@ class AbstractItem(object):
         self.__width = None
         self.__height = None
 
+    def close(self):
+        raise NotImplementedError(t('abstract_method', method='Item.close()'))
+
     def debug(self):
         print('\n'.join([
             DEBUG_STR.format('Размер', self.size()),
@@ -197,6 +200,9 @@ class Item(AbstractItem):
         if wnd or select_by_click:
             self.set_window(wnd, select_by_click)
 
+    def close(self):
+        pass
+
     def debug(self):
         print('\n'.join([
             DEBUG_STR.format('Тип', 'Элемент'),
@@ -209,10 +215,6 @@ class Item(AbstractItem):
             raise RuntimeError(t('window_not_set'))
 
         WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
-
-    def Popen(self, *args, **kwargs):
-        hwnd, proc = WindowManager.Popen(*args, **kwargs)
-        self.set_window(hwnd)
 
     def set_window(self, wnd, select_by_click=False):
         if isinstance(wnd, int):
@@ -228,6 +230,28 @@ class Item(AbstractItem):
             return
 
         raise ValueError(t('invalid_argument_value', name='cmd'))
+
+
+class ProcessItem(AbstractItem):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.__hwnd = None
+        self.__proc = None
+
+    def close(self):
+        if self.__proc:
+            self.__proc.terminate()
+            self.__hwnd = None
+            self.__proc = None
+
+    def move(self):
+        if self.__hwnd:
+            WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
+
+    def Popen(self, *args, **kwargs):
+        self.__hwnd, self.__proc = WindowManager.Popen(*args, **kwargs)
+        return self.__hwnd, self.__proc
 
 
 class Layout(AbstractItem):
@@ -301,6 +325,10 @@ class Layout(AbstractItem):
 
     def append(self, item):
         return self.__insert(item, self.last(), after=False)
+
+    def close(self):
+        for item in self:
+            item.close()
 
     def debug(self):
         print('\n'.join([
