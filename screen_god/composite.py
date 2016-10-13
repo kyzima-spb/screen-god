@@ -103,13 +103,13 @@ class AbstractItem(object):
         self.__layout = layout
 
     def set_next(self, item):
-        if not isinstance(item, AbstractItem):
+        if item and not isinstance(item, AbstractItem):
             raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
 
         self.__next = item
 
     def set_prev(self, item):
-        if not isinstance(item, AbstractItem):
+        if item and not isinstance(item, AbstractItem):
             raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
 
         self.__prev = item
@@ -245,6 +245,12 @@ class ProcessItem(AbstractItem):
             self.__hwnd = None
             self.__proc = None
 
+    def debug(self):
+        print(DEBUG_STR.format('Тип', 'Процесс'))
+        print(DEBUG_STR.format('HWND', self.__hwnd))
+        print(DEBUG_STR.format('Процесс', self.__proc))
+        super().debug()
+
     def move(self):
         if self.__hwnd:
             WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
@@ -371,6 +377,22 @@ class Layout(AbstractItem):
     def move(self):
         for item in self:
             item.move()
+
+    def remove(self, item):
+        if not isinstance(item, AbstractItem):
+            raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
+
+        if item.prev() is None:
+            self.__head = item.next()
+        else:
+            item.prev().set_next(item.next())
+
+        if item.next() is None:
+            self.__tail = item.prev()
+        else:
+            item.next().set_prev(item.prev())
+
+        item.reset()
 
     def validate(self, item, throw=True):
         if not isinstance(item, AbstractItem):
