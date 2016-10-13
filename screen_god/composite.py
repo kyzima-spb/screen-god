@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from screen_god.manager import WindowManager
-from screen_god.messages import _
+from screen_god.messages import _ as t
 
 
 DEBUG_STR = '{:>12}: {}'
@@ -58,7 +58,7 @@ class AbstractItem(object):
         return self.__layout
 
     def move(self):
-        raise NotImplementedError(_('abstract_method', method='Item.execute()'))
+        raise NotImplementedError(t('abstract_method', method='Item.execute()'))
 
     def next(self):
         return self.__next
@@ -83,31 +83,31 @@ class AbstractItem(object):
 
     def set_layout(self, layout):
         if not isinstance(layout, Layout):
-            raise TypeError(_('incompatible_type_argument', name='layout', type='Layout'))
+            raise TypeError(t('incompatible_type_argument', name='layout', type='Layout'))
 
         self.__layout = layout
 
     def set_next(self, item):
         if not isinstance(item, AbstractItem):
-            raise TypeError(_('incompatible_type_argument', name='item', type='AbstractItem'))
+            raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
 
         self.__next = item
 
     def set_prev(self, item):
         if not isinstance(item, AbstractItem):
-            raise TypeError(_('incompatible_type_argument', name='item', type='AbstractItem'))
+            raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
 
         self.__prev = item
 
     def set_x(self, x):
         if self.layout() is not None:
-            raise RuntimeError(_('property_calculated_automatically'))
+            raise RuntimeError(t('property_calculated_automatically'))
 
         self.__x = int(x)
 
     def set_y(self, y):
         if self.layout() is not None:
-            raise RuntimeError(_('property_calculated_automatically'))
+            raise RuntimeError(t('property_calculated_automatically'))
 
         self.__y = int(y)
 
@@ -194,7 +194,7 @@ class Item(AbstractItem):
 
     def move(self):
         if self.__hwnd is None:
-            raise RuntimeError(_('window_not_set'))
+            raise RuntimeError(t('window_not_set'))
 
         WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
 
@@ -215,7 +215,7 @@ class Item(AbstractItem):
             self.__hwnd = WindowManager.find_by_mouse_click()
             return
 
-        raise ValueError(_('invalid_argument_value', name='cmd'))
+        raise ValueError(t('invalid_argument_value', name='cmd'))
 
 
 class Layout(AbstractItem):
@@ -273,7 +273,9 @@ class Layout(AbstractItem):
 
     def __insert(self, item, target=None, after=False):
         if not isinstance(item, AbstractItem):
-            raise TypeError(_('incompatible_type_argument', name='item', type='AbstractItem'))
+            raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
+
+        self.validate(item)
 
         item.reset()
         item.set_layout(self)
@@ -287,7 +289,7 @@ class Layout(AbstractItem):
             return
 
         if not isinstance(target, AbstractItem):
-            raise TypeError(_('incompatible_type_argument', name='target', type='AbstractItem'))
+            raise TypeError(t('incompatible_type_argument', name='target', type='AbstractItem'))
 
         self.__do_insert_after(item, target) if after else self.__do_insert_before(item, target)
 
@@ -322,15 +324,28 @@ class Layout(AbstractItem):
     def last(self):
         return self.__tail
 
-    def validate(self):
-        for item in self:
-            pass
+    def validate(self, item, throw=True):
+        if not isinstance(item, AbstractItem):
+            raise TypeError(t('incompatible_type_argument', name='item', type='AbstractItem'))
+
+        if self.last() is None:
+            return True
+
+        _, src_unit = self.last().size()
+        _, unit = item.size()
+
+        if unit != src_unit:
+            if throw:
+                raise RuntimeError(t('invalid_units', unit=unit, layout_unit=src_unit))
+            return False
+
+        return True
 
 
 class LayoutIterator(object):
     def __init__(self, layout):
         if not isinstance(layout, Layout):
-            raise TypeError(_('incompatible_type_argument', name='layout', type='Layout'))
+            raise TypeError(t('incompatible_type_argument', name='layout', type='Layout'))
 
         self.__start = layout.first()
 
