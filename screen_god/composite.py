@@ -16,7 +16,7 @@ class AbstractItem(object):
             return int(value * base_size / item_count)
 
         if unit == '%':
-            return value * base_size / 100
+            return int(value * base_size / 100)
 
         if unit == 'px':
             return value
@@ -58,7 +58,7 @@ class AbstractItem(object):
         return self.__layout
 
     def move(self):
-        raise NotImplementedError(t('abstract_method', method='Item.execute()'))
+        raise NotImplementedError(t('abstract_method', method='Item.move()'))
 
     def next(self):
         return self.__next
@@ -323,6 +323,10 @@ class Layout(AbstractItem):
 
     def last(self):
         return self.__tail
+
+    def move(self):
+        for item in self:
+            item.move()
 
     def validate(self, item, throw=True):
         if not isinstance(item, AbstractItem):
