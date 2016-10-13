@@ -8,6 +8,8 @@ DEBUG_STR = '{:>12}: {}'
 
 
 class AbstractItem(object):
+    __instances = {}
+
     def __get_item_size(self, base_size):
         value, unit = self.size()
 
@@ -40,6 +42,16 @@ class AbstractItem(object):
             DEBUG_STR.format('Сверху', self.y()),
             ''
         ]))
+
+    @classmethod
+    def get_instance(cls, uid, *args, **kwargs):
+        item = cls.__instances.get(uid)
+
+        if item is None:
+            item = cls(*args, **kwargs)
+            cls.__instances[uid] = item
+
+        return item
 
     def height(self, force=False):
         if not force and self.__height:
