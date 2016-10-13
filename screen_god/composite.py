@@ -229,9 +229,6 @@ class Layout(AbstractItem):
         self.__head = None
         self.__tail = None
 
-        self.__item_count = 0
-        self.__size_unit = None
-
         if x is not None:
             self.set_x(x)
 
@@ -280,9 +277,6 @@ class Layout(AbstractItem):
         item.reset()
         item.set_layout(self)
 
-        value, unit = item.size()
-        self.__item_count += (value if unit is None else 0)
-
         if self.__head is None:
             self.__head = item
             self.__tail = item
@@ -319,7 +313,17 @@ class Layout(AbstractItem):
         self.__insert(item, target, after=False)
 
     def item_count(self):
-        return self.__item_count
+        count = 0
+
+        for item in self:
+            value, unit = item.size()
+
+            if unit:
+                break
+
+            count += value
+
+        return count
 
     def last(self):
         return self.__tail
