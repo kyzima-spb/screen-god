@@ -13,6 +13,8 @@ try:
 except ImportError:
     pass
 
+from .messages import _ as t
+
 
 def run_command(cmd):
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
@@ -42,6 +44,10 @@ class WindowManager(object):
 
         while attempts:
             time.sleep(0.5)
+
+            if not psutil.pid_exists(proc.pid):
+                raise psutil.NoSuchProcess(proc.pid)
+
             hwnd = self.find_by_pid(proc.pid)
 
             if hwnd:
@@ -49,7 +55,7 @@ class WindowManager(object):
 
             attempts -= 1
 
-        raise RuntimeError('You have started the process without a GUI')
+        raise RuntimeError(t('started_process_without_gui'))
 
 
 class LinuxWindowManager(WindowManager):
@@ -180,12 +186,51 @@ class WinWindowManager(WindowManager):
                 'screen': None,
             }
 
+    def get_all_opened(self):
+        """Get all the open windows, that have WS_VISIBLE style."""
+
+        opened = []
+
+        def create_opened_callback(hwnd, opened):
+            if win32gui.IsWindowVisible(hwnd):
+                opened.append(hwnd)
+
+        win32gui.EnumWindows(create_opened_callback, opened)
+
+        return opened
+
     def is_exists(self, hwnd):
         return bool(win32gui.IsWindow(hwnd))
 
     def move(self, hwnd, x, y, width, height):
         if self.is_exists(hwnd):
             win32gui.MoveWindow(hwnd, x, y, width, height, True)
+
+    def Popen(self, *args, attempts=10, **kwargs):
+        """
+        Обработчик исключения psutil.NoSuchProcess необходим по причине:
+
+        В Windows некоторые приложения при повторном запуске не создают нового процесса, а порождают новый поток.
+
+        Поэтому, возвращаемый методом Popen, объект Process становится бесполезным
+        и порожденный им процесс через некоторое время будет убит.
+        """
+
+        opened = self.get_all_opened()
+
+        try:
+            return super().Popen(*args, attempts=attempts, **kwargs)
+        except psutil.NoSuchProcess:
+            while attempts:
+                last_opened = set(self.get_all_opened()) - set(opened)
+
+                if len(last_opened):
+                    return opened.pop(), None
+
+                attempts -= 1
+                time.sleep(0.5)
+
+            raise RuntimeError(t('started_process_without_gui'))
 
 
 osname = platform.system()

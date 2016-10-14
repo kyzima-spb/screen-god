@@ -6,6 +6,7 @@ __messages = {
     'invalid_argument_value': 'Invalid argument value "{name}".',
     'invalid_units': 'Invalid units - "{unit}". Layout uses "{layout_unit}".',
     'property_calculated_automatically': 'The property will be calculated automatically.',
+    'started_process_without_gui': 'You have started the process without a GUI.',
     'window_not_set': 'The window is not set.',
 }
 
