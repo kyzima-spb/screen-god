@@ -225,7 +225,7 @@ class WinWindowManager(WindowManager):
                 last_opened = set(self.get_all_opened()) - set(opened)
 
                 if len(last_opened):
-                    return opened.pop(), None
+                    return last_opened.pop(), None
 
                 attempts -= 1
                 time.sleep(0.5)
