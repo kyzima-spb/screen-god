@@ -39,19 +39,38 @@ class WindowManager(object):
     def move(self, hwnd, x, y, width, height):
         raise NotImplementedError('WindowManager.move() is abstract and must be overridden')
 
-    def Popen(self, *args, attempts=10, **kwargs):
-        proc = psutil.Popen(*args, **kwargs)
+    def Popen(self, args, attempts=10, shell=False, **kwargs):
+        def get_children(proc, attempts):
+            children = []
+
+            while attempts and len(children) == 0:
+                time.sleep(0.5)
+
+                if not psutil.pid_exists(proc.pid):
+                    raise psutil.NoSuchProcess(proc.pid)
+
+                children = proc.children(recursive=True)
+                attempts -= 1
+
+            if len(children) == 0:
+                raise RuntimeError(t('started_process_without_gui'))
+
+            return children
+
+        proc = psutil.Popen(args, shell=shell, **kwargs)
+        checked_processes = get_children(proc, attempts) if shell else [proc]
 
         while attempts:
             time.sleep(0.5)
 
-            if not psutil.pid_exists(proc.pid):
-                raise psutil.NoSuchProcess(proc.pid)
+            for proc in checked_processes:
+                if not psutil.pid_exists(proc.pid):
+                    raise psutil.NoSuchProcess(proc.pid)
 
-            hwnd = self.find_by_pid(proc.pid)
+                hwnd = self.find_by_pid(proc.pid)
 
-            if hwnd:
-                return hwnd, proc
+                if hwnd:
+                    return hwnd, proc
 
             attempts -= 1
 
