@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from screen_god.manager import WindowManager
-from screen_god.messages import _ as t
+from screen_god.messages import t
 
 
 DEBUG_STR = '{:>12}: {}'

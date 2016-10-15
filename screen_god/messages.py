@@ -11,6 +11,6 @@ __messages = {
 }
 
 
-def _(msg, *args, **kwargs):
+def t(msg, *args, **kwargs):
     msg = __messages.get(msg)
     return msg.format(*args, **kwargs) if msg else ''

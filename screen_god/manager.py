@@ -13,7 +13,7 @@ try:
 except ImportError:
     pass
 
-from .messages import _ as t
+from .messages import t
 
 
 def run_command(cmd):
@@ -25,21 +25,31 @@ def run_command(cmd):
 
 class WindowManager(object):
     def find_by_pid(self, pid):
-        raise NotImplementedError('WindowManager.find_by_pid() is abstract and must be overridden')
+        """Найти окно по идентификатору процесса."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.find_by_pid()'))
 
     def find_by_title(self, title):
-        raise NotImplementedError('WindowManager.find_by_title() is abstract and must be overridden')
+        """Найти окно по заголовку, используется точное совпадение."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.find_by_title()'))
 
     def geometry(self, hwnd):
-        raise NotImplementedError('WindowManager.geometry() is abstract and must be overridden')
+        """Возвращает позицию и размеры окна относительно экрана."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.geometry()'))
 
     def is_exists(self, hwnd):
-        raise NotImplementedError('WindowManager.is_exists() is abstract and must be overridden')
+        """Возвращает True, если окно с указанным идентификатором существует."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.is_exists()'))
 
     def move(self, hwnd, x, y, width, height):
-        raise NotImplementedError('WindowManager.move() is abstract and must be overridden')
+        """Изменяет размеры окна и перемещает его в указанную позицию."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.move()'))
 
     def Popen(self, args, attempts=10, shell=False, **kwargs):
+        """
+        Порождает новый процесс и пытается найти открывшееся окно.
+        В случаи успеха будет возвращен идентификатор окна и процесс.
+        В случаи неудачи, будет возбуждено исключение.
+        """
         def get_children(proc, attempts):
             children = []
 
