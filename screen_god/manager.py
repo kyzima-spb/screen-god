@@ -134,25 +134,23 @@ class LinuxWindowManager(WindowManager):
     def geometry(self, hwnd):
         """Returns without borders"""
 
-        cmd = 'xdotool getwindowgeometry --shell {}'.format(self.__hwnd2int(hwnd))
-        result = run_command(cmd)
-        result = result[0].split()
+        cmd = 'xwininfo -id {} | egrep "(Absolute|Width|Height)" | egrep -o "[a-zA-Z]+:.*[0-9]+"'.format(
+            self.__hwnd2int(hwnd)
+        )
 
-        geometry = {}
-        props = {
-            'window': 'hwnd',
-            'x': 'left',
-            'y': 'top',
-            'width': 'width',
-            'height': 'height',
-            'screen': 'screen',
+        result, err, code = run_command(cmd)
+        result = [i.split(':') for i in result.split('\n')]
+        result = dict([p.strip().lower(), int(v.strip())] for p, v in result)
+
+        borders = self.borders(hwnd)
+
+        geometry = {
+            'hwnd': hwnd,
+            'left': result['x'] - borders['left'],
+            'top': result['y'] - borders['top'],
+            'width': result['width'] + borders['left'] + borders['right'],
+            'height': result['height'] + borders['top'] + borders['bottom'],
         }
-
-        for p in result:
-            prop, value = p.split('=')
-            prop = props.get(prop.lower())
-            if prop:
-                geometry[prop] = int(value)
 
         return geometry
 
@@ -161,12 +159,14 @@ class LinuxWindowManager(WindowManager):
         return code == 0
 
     def move(self, hwnd, x, y, width, height):
-        run_command('xdotool windowmove {id} {x} {y} windowsize {id} {width} {height} windowraise {id}'.format(
-            id=self.__hwnd2int(hwnd),
-            x=x,
-            y=y,
-            width=width,
-            height=height
+        borders = self.borders(hwnd)
+
+        run_command('wmctrl -i -r {id} -b remove,maximized_vert,maximized_horz -e 0,{x},{y},{width},{height}'.format(
+            id=hwnd,
+            x=x + borders['left'],
+            y=y + borders['top'],
+            width=width - borders['left'] - borders['right'],
+            height=height - borders['top'] - borders['bottom']
         ))
 
 
