@@ -200,6 +200,9 @@ class Item(AbstractItem):
         if wnd or select_by_click:
             self.set_window(wnd, select_by_click)
 
+    def hwnd(self):
+        return self.__hwnd
+
     def close(self):
         pass
 
@@ -229,7 +232,7 @@ class Item(AbstractItem):
             self.__hwnd = WindowManager.find_by_mouse_click()
             return
 
-        raise ValueError(t('invalid_argument_value', name='cmd'))
+        raise ValueError(t('invalid_argument_value', name='wnd'))
 
 
 class ProcessItem(AbstractItem):

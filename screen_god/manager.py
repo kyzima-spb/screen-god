@@ -114,10 +114,10 @@ class LinuxWindowManager(WindowManager):
     def find_by_mouse_click(self):
         print('Please select window...')
 
-        hwnd, err, code = run_command('xdotool selectwindow')
+        hwnd, err, code = run_command('xwininfo | grep "Window id:" | cut -f 4 -d \ ')
 
         if code == 0:
-            return hwnd
+            return self.__hwnd2int(hwnd)
 
     def find_by_pid(self, pid):
         if not psutil.pid_exists(pid):
@@ -163,8 +163,8 @@ class LinuxWindowManager(WindowManager):
 
         run_command('wmctrl -i -r {id} -b remove,maximized_vert,maximized_horz -e 0,{x},{y},{width},{height}'.format(
             id=hwnd,
-            x=x + borders['left'],
-            y=y + borders['top'],
+            x=x,
+            y=y,
             width=width - borders['left'] - borders['right'],
             height=height - borders['top'] - borders['bottom']
         ))
@@ -274,7 +274,6 @@ elif osname == 'Linux':
             warnings.warn('''I require "{}" but it's not installed.'''.format(package_name),
                           stacklevel=2)
 
-    check_installed('xdotool')
     check_installed('wmctrl')
 
     WindowManager = LinuxWindowManager()
