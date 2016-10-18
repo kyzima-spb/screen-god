@@ -10,6 +10,7 @@ import psutil
 try:
     import win32api
     import win32gui
+    import win32con
     import win32process
 except ImportError:
     pass
