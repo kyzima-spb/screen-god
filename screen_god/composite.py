@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+import psutil
+
 from screen_god.manager import WindowManager
 from screen_god.messages import t
 
@@ -34,6 +36,7 @@ class AbstractItem(object):
         self.__height = None
 
     def close(self):
+        """Завершает работу элемента."""
         raise NotImplementedError(t('abstract_method', method='Item.close()'))
 
     def debug(self):
@@ -204,7 +207,7 @@ class Item(AbstractItem):
         return self.__hwnd
 
     def close(self):
-        pass
+        WindowManager.close(self.hwnd())
 
     def debug(self):
         print('\n'.join([
@@ -243,7 +246,7 @@ class ProcessItem(AbstractItem):
         self.__proc = None
 
     def close(self):
-        if self.__proc:
+        if self.__proc and psutil.pid_exists(self.__proc.pid):
             self.__proc.terminate()
             self.__hwnd = None
             self.__proc = None
