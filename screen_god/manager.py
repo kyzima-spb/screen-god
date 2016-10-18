@@ -30,6 +30,10 @@ class WindowManager(object):
         """Возвращает размеры декорации окна."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.borders()'))
 
+    def close(self, hwnd):
+        """Закрыть указанное окно."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.close()'))
+
     def find_by_pid(self, pid):
         """Найти окно по идентификатору процесса."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.find_by_pid()'))
@@ -117,6 +121,9 @@ class LinuxWindowManager(WindowManager):
 
         return borders
 
+    def close(self, hwnd):
+        res, err, code = run_command('xkill -id {}'.format(hwnd))
+
     def find_by_mouse_click(self):
         print('Please select window...')
 
@@ -189,6 +196,9 @@ class WinWindowManager(WindowManager):
 
         # print(win32gui.GetClientRect(hwnd))
         # print(win32gui.GetWindowRect(hwnd))
+
+    def close(self, hwnd):
+        win32gui.SendMessage(hwnd, win32con.WM_SYSCOMMAND, win32con.SC_CLOSE, 0)
 
     # def find_by_mouse_click(self):
         # WindowFromPoint
