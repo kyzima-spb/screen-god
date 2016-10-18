@@ -8,6 +8,7 @@ import time
 import psutil
 
 try:
+    import win32api
     import win32gui
     import win32process
 except ImportError:
@@ -24,6 +25,10 @@ def run_command(cmd):
 
 
 class WindowManager(object):
+    def borders(self, hwnd):
+        """Возвращает размеры декорации окна."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.borders()'))
+
     def find_by_pid(self, pid):
         """Найти окно по идентификатору процесса."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.find_by_pid()'))
@@ -171,9 +176,18 @@ class LinuxWindowManager(WindowManager):
 
 
 class WinWindowManager(WindowManager):
-    # def borders(self, hwnd):
-    #     print(win32gui.GetClientRect(hwnd))
-    #     print(win32gui.GetWindowRect(hwnd))
+    def borders(self, hwnd):
+        border = win32api.GetSystemMetrics(win32con.SM_CXSIZEFRAME)
+
+        return {
+            'left': border,
+            'right': border,
+            'top': border,
+            'bottom': border,
+        }
+
+        # print(win32gui.GetClientRect(hwnd))
+        # print(win32gui.GetWindowRect(hwnd))
 
     # def find_by_mouse_click(self):
         # WindowFromPoint
@@ -212,7 +226,6 @@ class WinWindowManager(WindowManager):
                 'top': rect[1],
                 'width': rect[2] - rect[0],
                 'height': rect[3] - rect[1],
-                'screen': None,
             }
 
     def get_all_opened(self):
