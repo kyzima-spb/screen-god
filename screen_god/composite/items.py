@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 
+from time import sleep
+from subprocess import PIPE
+from threading import Thread
+
 import psutil
+from psutil import pid_exists
 
 from screen_god.composite.base import DEBUG_STR, AbstractItem
 from screen_god.manager import WindowManager
@@ -77,3 +82,74 @@ class ProcessItem(AbstractItem):
     def Popen(self, *args, **kwargs):
         self.__hwnd, self.__proc = WindowManager.Popen(*args, **kwargs)
         return self.__hwnd, self.__proc
+
+
+class LauncherItem(AbstractItem):
+    def __init__(self, size=1, stdout_handler=None, stderr_handler=None, **kwargs):
+        super(LauncherItem, self).__init__(size)
+
+        self.__hwnd = None
+        self.__proc = None
+        self.__thread = None
+
+        # self.__cmd = cmd
+        self.__stdout_handler = stdout_handler
+        self.__stderr_handler = stderr_handler
+
+        if stdout_handler:
+            kwargs['stdout'] = PIPE
+
+        if stderr_handler:
+            kwargs['stderr'] = PIPE
+
+        self.__kwargs = kwargs
+
+    def close(self):
+        if self.__proc and pid_exists(self.__proc.pid):
+            for proc in self.__proc.children(recursive=True):
+                proc.terminate()
+
+            self.__proc.terminate()
+
+        self.__hwnd = None
+        self.__proc = None
+        self.__thread = None
+
+    def debug(self):
+        print('\n'.join([
+            DEBUG_STR.format('Тип', 'Процесс'),
+            DEBUG_STR.format('HWND', self.__hwnd),
+            DEBUG_STR.format('Процесс', self.__proc)
+        ]))
+        super().debug()
+
+    def execute(self, cmd):
+        if self.__proc:
+            return
+
+        # self.__proc = psutil.Popen(cmd, **self.__kwargs)
+        self.__hwnd, self.__proc = WindowManager.Popen(cmd, **self.__kwargs)
+        self.move()
+
+        if self.__stdout_handler:
+            stdout_handler = self.__stdout_handler()
+
+            self.__thread = Thread(target=self.reader, args=(self.__proc.stdout, stdout_handler))
+            self.__thread.start()
+
+    def move(self):
+        if self.__hwnd:
+            WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
+
+    def reader(self, std_thread, handler):
+        while True:
+            line = std_thread.readline()
+
+            if not line:
+                return
+
+            line = line.rstrip()
+            handler.execute(line)
+            sleep(0.1)
+
+        self.__thread.join()
