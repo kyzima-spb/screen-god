@@ -76,6 +76,12 @@ class LinuxWindowManager(WindowManager):
 
         return geometry
 
+    def get_opened(self):
+        """Get all the open windows."""
+        opened, _, _ = run_command('wmctrl -l | cut -f 1 -d \ ')
+        return opened.split()
+
+
     def is_exists(self, hwnd):
         _, _, code = run_command('wmctrl -l | grep {}'.format(self.__hwnd2hex(hwnd)))
         return code == 0

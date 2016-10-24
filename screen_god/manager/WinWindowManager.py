@@ -68,7 +68,7 @@ class WinWindowManager(WindowManager):
                 'height': rect[3] - rect[1],
             }
 
-    def get_all_opened(self):
+    def get_opened(self):
         """Get all the open windows, that have WS_VISIBLE style."""
 
         opened = []
@@ -98,13 +98,13 @@ class WinWindowManager(WindowManager):
         и порожденный им процесс через некоторое время будет убит.
         """
 
-        opened = self.get_all_opened()
+        opened = self.get_opened()
 
         try:
             return super().Popen(*args, attempts=attempts, **kwargs)
         except psutil.NoSuchProcess:
             while attempts:
-                last_opened = set(self.get_all_opened()) - set(opened)
+                last_opened = set(self.get_opened()) - set(opened)
 
                 if len(last_opened):
                     return last_opened.pop(), None
