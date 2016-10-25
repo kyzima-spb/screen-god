@@ -81,35 +81,25 @@ class WinWindowManager(WindowManager):
 
         return opened
 
+    def get_pid_by_hwnd(self, hwnd):
+        found = []
+
+        def cb(hwnd, hwnd_needed):
+            if not win32gui.IsWindowVisible(hwnd):
+                return
+
+            tid, pid = win32process.GetWindowThreadProcessId(hwnd)
+
+            if hwnd == hwnd_needed:
+                found.append(pid)
+
+        win32gui.EnumWindows(cb, hwnd)
+
+        return found.pop() if len(found) == 1 else None
+
     def is_exists(self, hwnd):
         return bool(win32gui.IsWindow(hwnd))
 
     def move(self, hwnd, x, y, width, height):
         if self.is_exists(hwnd):
             win32gui.MoveWindow(hwnd, x, y, width, height, True)
-
-    def Popen(self, *args, attempts=10, **kwargs):
-        """
-        Обработчик исключения psutil.NoSuchProcess необходим по причине:
-
-        В Windows некоторые приложения при повторном запуске не создают нового процесса, а порождают новый поток.
-
-        Поэтому, возвращаемый методом Popen, объект Process становится бесполезным
-        и порожденный им процесс через некоторое время будет убит.
-        """
-
-        opened = self.get_opened()
-
-        try:
-            return super().Popen(*args, attempts=attempts, **kwargs)
-        except psutil.NoSuchProcess:
-            while attempts:
-                last_opened = set(self.get_opened()) - set(opened)
-
-                if len(last_opened):
-                    return last_opened.pop(), None
-
-                attempts -= 1
-                time.sleep(0.5)
-
-            raise RuntimeError(t('started_process_without_gui'))

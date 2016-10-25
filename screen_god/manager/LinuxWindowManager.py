@@ -81,6 +81,9 @@ class LinuxWindowManager(WindowManager):
         opened, _, _ = run_command('wmctrl -l | cut -f 1 -d \ ')
         return opened.split()
 
+    def get_pid_by_hwnd(self, hwnd):
+        pid, _, _ = run_command('wmctrl -l -p | grep {} | cut -f 4 -d \ '.format(hwnd))
+        return int(pid)
 
     def is_exists(self, hwnd):
         _, _, code = run_command('wmctrl -l | grep {}'.format(self.__hwnd2hex(hwnd)))

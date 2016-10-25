@@ -1,10 +1,26 @@
 # -*- coding: utf-8 -*-
 
-import time
+import os.path as Path
+from time import sleep
 
 import psutil
 
 from screen_god.messages import t
+
+
+class NoSuchWindowException(Exception):
+    """
+    Exception raised when a window with a certain PID doesn't or no longer exists.
+    """
+    def __init__(self, msg=''):
+        self.msg = msg
+
+    def __repr__(self):
+        ret = "%s.%s %s" % (self.__class__.__module__,
+                            self.__class__.__name__, self.msg)
+        return ret.strip()
+
+    __str__ = __repr__
 
 
 class WindowManager(object):
@@ -28,6 +44,32 @@ class WindowManager(object):
         """Возвращает позицию и размеры окна относительно экрана."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.geometry()'))
 
+    def get_last_opened(self, opened, attempts=10):
+        """
+        Возвращает окна, открытые после переданных в аргументе opened.
+        Каждая попытка выполняется раз в половину секунды.
+        """
+
+        opened = set(opened)
+
+        while attempts:
+            last_opened = set(self.get_opened()) - opened
+
+            if len(last_opened):
+                return last_opened
+
+            attempts -= 1
+            sleep(0.5)
+
+        return set()
+
+    def get_opened(self):
+        """Get all the open windows."""
+        raise NotImplementedError(t('abstract_method', method='WindowManager.get_opened()'))
+
+    def get_pid_by_hwnd(self, hwnd):
+        raise NotImplementedError(t('abstract_method', method='WindowManager.get_pid_by_hwnd()'))
+
     def is_exists(self, hwnd):
         """Возвращает True, если окно с указанным идентификатором существует."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.is_exists()'))
@@ -36,44 +78,37 @@ class WindowManager(object):
         """Изменяет размеры окна и перемещает его в указанную позицию."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.move()'))
 
-    def Popen(self, args, attempts=10, shell=False, **kwargs):
-        """
-        Порождает новый процесс и пытается найти открывшееся окно.
-        В случаи успеха будет возвращен идентификатор окна и процесс.
-        В случаи неудачи, будет возбуждено исключение.
-        """
-        def get_children(proc, attempts):
-            children = []
+    def Popen(self, cargs, attempts=10, shell=False, **kwargs):
+        opened = self.get_opened()
+        proc = psutil.Popen(cargs, shell=shell, **kwargs)
+        cmd = ' '.join(proc.cmdline())
 
-            while attempts and len(children) == 0:
-                time.sleep(0.5)
+        last_opened = self.get_last_opened(opened, attempts)
 
-                if not psutil.pid_exists(proc.pid):
-                    raise psutil.NoSuchProcess(proc.pid)
+        if not len(last_opened):
+            raise NoSuchWindowException(t('started_process_without_gui'))
 
-                children = proc.children(recursive=True)
-                attempts -= 1
+        def f(p, cmd):
+            name = Path.basename(' '.join(p.cmdline()))
+            return cmd.find(name) != -1
 
-            if len(children) == 0:
-                raise RuntimeError(t('started_process_without_gui'))
+        for hwnd in last_opened:
+            pid = self.get_pid_by_hwnd(hwnd)
+            p = psutil.Process(pid)
 
-            return children
+            if shell:
+                if psutil.pid_exists(proc.pid):
+                    for child in proc.children():
+                        if child.pid == p.pid:
+                            return hwnd, proc
 
-        proc = psutil.Popen(args, shell=shell, **kwargs)
-        checked_processes = get_children(proc, attempts) if shell else [proc]
-
-        while attempts:
-            time.sleep(0.5)
-
-            for proc in checked_processes:
-                if not psutil.pid_exists(proc.pid):
-                    raise psutil.NoSuchProcess(proc.pid)
-
-                hwnd = self.find_by_pid(proc.pid)
-
-                if hwnd:
+                if f(p, cmd):
+                    return hwnd, None
+            else:
+                if pid == proc.pid:
                     return hwnd, proc
 
-            attempts -= 1
+                if p.name() == proc.name():
+                    return hwnd, None
 
-        raise RuntimeError(t('started_process_without_gui'))
+        raise NoSuchWindowException(t('started_process_without_gui'))
