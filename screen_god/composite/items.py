@@ -57,6 +57,15 @@ class Item(AbstractItem):
 
 
 class LauncherItem(AbstractItem):
+    def __merge_kwargs(self, kwargs):
+        if self.__stdout_handler:
+            kwargs['stdout'] = PIPE
+
+        if self.__stderr_handler:
+            kwargs['stderr'] = PIPE
+
+        return kwargs
+
     def __init__(self, size=1, stdout_handler=None, stderr_handler=None, **kwargs):
         super(LauncherItem, self).__init__(size)
 
@@ -67,13 +76,7 @@ class LauncherItem(AbstractItem):
         self.__stdout_handler = stdout_handler
         self.__stderr_handler = stderr_handler
 
-        if stdout_handler:
-            kwargs['stdout'] = PIPE
-
-        if stderr_handler:
-            kwargs['stderr'] = PIPE
-
-        self.__kwargs = kwargs
+        self.__kwargs = self.__merge_kwargs(kwargs)
 
     def close(self):
         if self.__proc and pid_exists(self.__proc.pid):
@@ -94,12 +97,13 @@ class LauncherItem(AbstractItem):
         ]))
         super().debug()
 
-    def execute(self, cmd):
+    def execute(self, cmd, **kwargs):
         if self.__proc:
             return
 
-        # self.__proc = psutil.Popen(cmd, **self.__kwargs)
-        self.__hwnd, self.__proc = WindowManager.Popen(cmd, **self.__kwargs)
+        kwargs = self.__merge_kwargs(kwargs)
+
+        self.__hwnd, self.__proc = WindowManager.Popen(cmd, **kwargs)
         self.move()
 
         if self.__stdout_handler:
