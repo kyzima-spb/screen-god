@@ -1,14 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import time
-
 import psutil
 import win32api
 import win32gui
 import win32con
 import win32process
 
-from screen_god import t
 from screen_god.manager.WindowManager import WindowManager
 
 
