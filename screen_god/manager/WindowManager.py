@@ -44,24 +44,9 @@ class WindowManager(object):
         """Возвращает позицию и размеры окна относительно экрана."""
         raise NotImplementedError(t('abstract_method', method='WindowManager.geometry()'))
 
-    def get_last_opened(self, opened, attempts=10):
-        """
-        Возвращает окна, открытые после переданных в аргументе opened.
-        Каждая попытка выполняется раз в половину секунды.
-        """
-
-        opened = set(opened)
-
-        while attempts:
-            last_opened = set(self.get_opened()) - opened
-
-            if len(last_opened):
-                return last_opened
-
-            attempts -= 1
-            sleep(0.5)
-
-        return set()
+    def get_last_opened(self, opened):
+        """Возвращает окна, открытые после переданных в аргументе opened."""
+        return set(self.get_opened()) - set(opened)
 
     def get_opened(self):
         """Get all the open windows."""
@@ -79,36 +64,41 @@ class WindowManager(object):
         raise NotImplementedError(t('abstract_method', method='WindowManager.move()'))
 
     def Popen(self, cargs, attempts=10, shell=False, **kwargs):
+        """Каждая попытка выполняется раз в половину секунды."""
+
         opened = self.get_opened()
         proc = psutil.Popen(cargs, shell=shell, **kwargs)
         cmd = ' '.join(proc.cmdline())
 
-        last_opened = self.get_last_opened(opened, attempts)
+        def find(latest):
+            for hwnd in latest:
+                pid = self.get_pid_by_hwnd(hwnd)
+                p = psutil.Process(pid)
 
-        if not len(last_opened):
-            raise NoSuchWindowException(t('started_process_without_gui'))
+                if shell:
+                    if psutil.pid_exists(proc.pid):
+                        for child in proc.children():
+                            if child.pid == p.pid:
+                                return hwnd, proc
 
-        def f(p, cmd):
-            name = Path.basename(' '.join(p.cmdline()))
-            return cmd.find(name) != -1
+                    name = Path.basename(' '.join(p.cmdline()))
 
-        for hwnd in last_opened:
-            pid = self.get_pid_by_hwnd(hwnd)
-            p = psutil.Process(pid)
+                    if cmd.find(name) != -1:
+                        return hwnd, None
+                else:
+                    if pid == proc.pid:
+                        return hwnd, proc
 
-            if shell:
-                if psutil.pid_exists(proc.pid):
-                    for child in proc.children():
-                        if child.pid == p.pid:
-                            return hwnd, proc
+                    if p.name() == proc.name():
+                        return hwnd, None
 
-                if f(p, cmd):
-                    return hwnd, None
-            else:
-                if pid == proc.pid:
-                    return hwnd, proc
+        while attempts:
+            result = find(self.get_last_opened(opened))
 
-                if p.name() == proc.name():
-                    return hwnd, None
+            if result:
+                return result
+
+            attempts -= 1
+            sleep(0.5)
 
         raise NoSuchWindowException(t('started_process_without_gui'))
