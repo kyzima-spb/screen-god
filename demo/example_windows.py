@@ -2,13 +2,13 @@
 
 import time
 
-from screen_god import ProcessItem, Layout
+from screen_god import LauncherItem, Layout
 
 
-notepad = ProcessItem()
-regedit = ProcessItem()
-explorer = ProcessItem()
-paint = ProcessItem()
+notepad = LauncherItem()
+regedit = LauncherItem()
+explorer = LauncherItem()
+paint = LauncherItem()
 
 layout = Layout(direction=Layout.HORIZONTAL)
 layout.append(notepad)
@@ -19,10 +19,10 @@ main_layout.append(explorer)
 main_layout.append(layout)
 main_layout.append(paint)
 
-notepad.Popen(['notepad'])
-regedit.Popen(['regedit'])
-explorer.Popen(['explorer'])
-paint.Popen(['%SystemRoot%\system32\mspaint.exe'], shell=True)
+notepad.execute(['notepad'])
+regedit.execute(['regedit'])
+explorer.execute(['explorer'])
+paint.execute(['%SystemRoot%\system32\mspaint.exe'], shell=True)
 
 main_layout.move()
 

@@ -2,12 +2,12 @@
 
 import time
 
-from screen_god import ProcessItem, Layout
+from screen_god import LauncherItem, Layout
 
 
-designer = ProcessItem()
-vlc = ProcessItem()
-iceweasel = ProcessItem()
+designer = LauncherItem()
+vlc = LauncherItem()
+iceweasel = LauncherItem()
 
 layout = Layout(direction=Layout.HORIZONTAL)
 layout.append(designer)
@@ -17,9 +17,9 @@ main_layout = Layout(direction=Layout.VERTICAL, x=10, y=50, width=1400, height=9
 main_layout.append(layout)
 main_layout.append(iceweasel)
 
-designer.Popen(['designer'])
-vlc.Popen(['vlc'])
-iceweasel.Popen(['iceweasel', '--private-window'])
+designer.execute(['designer'])
+vlc.execute(['vlc'])
+iceweasel.execute(['iceweasel', '--private-window'])
 
 main_layout.move()
 

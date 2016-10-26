@@ -56,34 +56,6 @@ class Item(AbstractItem):
         raise ValueError(t('invalid_argument_value', name='wnd'))
 
 
-class ProcessItem(AbstractItem):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        self.__hwnd = None
-        self.__proc = None
-
-    def close(self):
-        if self.__proc and psutil.pid_exists(self.__proc.pid):
-            self.__proc.terminate()
-            self.__hwnd = None
-            self.__proc = None
-
-    def debug(self):
-        print(DEBUG_STR.format('Тип', 'Процесс'))
-        print(DEBUG_STR.format('HWND', self.__hwnd))
-        print(DEBUG_STR.format('Процесс', self.__proc))
-        super().debug()
-
-    def move(self):
-        if self.__hwnd:
-            WindowManager.move(self.__hwnd, self.x(), self.y(), self.width(), self.height())
-
-    def Popen(self, *args, **kwargs):
-        self.__hwnd, self.__proc = WindowManager.Popen(*args, **kwargs)
-        return self.__hwnd, self.__proc
-
-
 class LauncherItem(AbstractItem):
     def __init__(self, size=1, stdout_handler=None, stderr_handler=None, **kwargs):
         super(LauncherItem, self).__init__(size)
@@ -92,7 +64,6 @@ class LauncherItem(AbstractItem):
         self.__proc = None
         self.__thread = None
 
-        # self.__cmd = cmd
         self.__stdout_handler = stdout_handler
         self.__stderr_handler = stderr_handler
 
