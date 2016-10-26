@@ -85,6 +85,9 @@ class LauncherItem(AbstractItem):
 
             self.__proc.terminate()
 
+        if WindowManager.is_exists(self.__hwnd):
+            WindowManager.close(self.__hwnd)
+
         self.__hwnd = None
         self.__proc = None
         self.__thread = None
