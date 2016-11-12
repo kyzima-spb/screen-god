@@ -351,9 +351,6 @@ class LayoutIterator(object):
         self.__start = layout.first()
 
     def __next__(self):
-        return self.next()
-
-    def next(self):
         if self.__start is None:
             raise StopIteration
 
@@ -361,3 +358,6 @@ class LayoutIterator(object):
         self.__start = item.next()
 
         return item
+
+    # Create an alias so that Python 2.x won't complain about not being an iterator.
+    next = __next__
